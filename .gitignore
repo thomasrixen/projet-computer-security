@@ -1,0 +1,11 @@
+*
+
+# But do not ignore directories (needed for recursion)
+!*/
+
+# Do not ignore the fuzzer directory and its contents
+!/fuzzer/
+!/fuzzer/**
+
+# Do not ignore the .gitignore file itself
+!.gitignore
