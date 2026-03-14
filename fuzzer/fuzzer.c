@@ -7,6 +7,11 @@
 #include <unistd.h>
 #include <limits.h>
 #include "help.h"
+#include "strat/strat_name.c"
+#include "strat/strat_linkname.c"
+#include "strat/strat_size.c"
+#include "strat/strat_typeflag.c"
+#include "fuzzer.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -47,10 +52,15 @@ void write_tar(const char* filename, struct tar_t* header)
     fclose(f);
 }
 
-static int run_target(const char* target)
+int run_target(const char* target)
 {
-    char cmd[PATH_MAX + 50];
-    snprintf(cmd, sizeof(cmd), "%s archive.tar 2>&1", target);
+    char base_dir[PATH_MAX];
+    char archive_abs[PATH_MAX];
+    char cmd[PATH_MAX * 3 + 128];
+
+    if (!getcwd(base_dir, sizeof(base_dir))) return -1;
+    snprintf(archive_abs, sizeof(archive_abs), "%s/archive.tar", base_dir);
+    snprintf(cmd, sizeof(cmd), "cd crashes/temp && \"%s\" \"%s\" 2>&1", target, archive_abs);
 
     FILE* fp = popen(cmd, "r");
     if (!fp) return -1;
@@ -68,6 +78,19 @@ static int run_target(const char* target)
     return rv;
 }
 
+void init_base_header(struct tar_t* header) {
+    memset(header, 0, sizeof(struct tar_t));
+    strcpy(header->name,  "test.txt");
+    strcpy(header->mode,  "0000644");
+    strcpy(header->uid,   "0000000");
+    strcpy(header->gid,   "0000000");
+    strcpy(header->size,  "00000000020"); 
+    strcpy(header->mtime, "00000000000");
+    strcpy(header->magic, "ustar");
+    header->typeflag = '0';
+    memcpy(header->version, "00", 2);
+}
+
 /* ------------------------------------------------------------------ */
 /* Advanced Generation Strategies                                     */
 /* ------------------------------------------------------------------ */
@@ -81,21 +104,6 @@ static void strat_random_garbage(struct tar_t* h) {
     }
 }
 
-static void strat_nasty_strings(struct tar_t* h) {
-    const char* nasties[] = {
-        "%s%s%s%s%s%s", 
-        "%n%n%n%n", 
-        "../../../../../../../../etc/passwd",
-        "\\x00\\x00\\x00",
-        "\n\n\n\n",    // New: Newlines
-        "\r\n\r\n",    // New: Carriage Returns
-        "test\0file",  // New: Null byte in middle of string
-        ""             // empty string
-    };
-    const char* nasty = nasties[rand() % 8]; // Updated count to 8
-    strncpy(h->name, nasty, 99);
-    strncpy(h->linkname, nasty, 99);
-}
 
 // 3. Integer Anomalies (Negative, Max Int, Non-Octal)
 static void strat_bad_numbers(struct tar_t* h) {
@@ -166,77 +174,23 @@ static void strat_binary_nasties(struct tar_t* h) {
 int main(int argc, char* argv[])
 {
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s <target_binary> [iterations]\n", argv[0]);
+        fprintf(stderr, "Usage: %s <target_binary>\n", argv[0]);
         return 1;
     }
 
     char* target_abs = realpath(argv[1], NULL);
     if (!target_abs) { perror("Target path"); return 1; }
 
-    int iterations = (argc >= 3) ? atoi(argv[2]) : 10000;
-    int crashes = 0;
-
     mkdir("crashes", 0755);
-    mkdir("crashes/tmp", 0755);
-    srand((unsigned)time(NULL));
+    mkdir("crashes/temp", 0755);
 
-    if (chdir("crashes/tmp") != 0) { perror("chdir"); return 1; }
+    int crashes_name = strat_nasty_name(target_abs);
+    int crashes_linkname = strat_nasty_linkname(target_abs);
+    int crashes_size = strat_nasty_size(target_abs);
+    int crashes_typeflag = strat_nasty_typeflag(target_abs);
 
-    printf("Fuzzing target: %s\n", target_abs);
-    printf("Iterations: %d\n\n", iterations);
+    printf("\n\nDone. %d crashes found.\n", crashes_name+crashes_linkname+crashes_size+crashes_typeflag);
 
-    for (int i = 0; i < iterations; i++) {
-        print_progress(i, iterations);
-
-        struct tar_t header;
-        memset(&header, 0, sizeof(header));
-
-        // Base valid header
-        strcpy(header.name,  "test.txt");
-        strcpy(header.mode,  "0000644");
-        strcpy(header.uid,   "0000000");
-        strcpy(header.gid,   "0000000");
-        strcpy(header.size,  "00000000020"); 
-        strcpy(header.mtime, "00000000000");
-        strcpy(header.magic, "ustar");
-        header.typeflag = '0';
-        memcpy(header.version, "00", 2);
-
-        // --- CHAINED GENERATION ---
-        int mutations = (rand() % 3) + 1;
-        
-        for(int m=0; m<mutations; m++) {
-            // FIXED: rand() % 6 covers cases 0,1,2,3,4,5
-            int strat = rand() % 6; 
-            switch(strat) {
-                case 0: strat_random_garbage(&header); break;
-                case 1: strat_nasty_strings(&header); break;
-                case 2: strat_bad_numbers(&header); break;
-                case 3: strat_massive_overflow(&header); break;
-                case 4: strat_corrupt_structure(&header); break;
-                case 5: strat_binary_nasties(&header); break;
-            }
-        }
-
-        // 90% chance to fix checksum (so we pass the first check)
-        if (rand() % 10 != 0) {
-            calculate_checksum(&header);
-        }
-
-        write_tar("archive.tar", &header);
-
-        if (run_target(target_abs) == 1) {
-            crashes++;
-            char crash_name[PATH_MAX];
-            snprintf(crash_name, sizeof(crash_name), "../crash_%d.tar", i);
-            rename("archive.tar", crash_name);
-            printf("\r\033[KCRASH at iter %d -> %s (Total: %d)\n", i, crash_name+3, crashes);
-        }
-    }
-
-    print_progress(iterations, iterations);
-    printf("\n\nDone. %d crashes found.\n", crashes);
-    
     free(target_abs);
     return 0;
 }

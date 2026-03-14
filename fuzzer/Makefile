@@ -1,11 +1,15 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -g
 
+# Targets to auto-test
+BUGS = ./bug0 ./bug1 ./bug2 ./bug3 ./bug4 ./bug5
+STRATS = strat/*.c
+
 all: fuzzer
 
 # Compile the fuzzer
-fuzzer: fuzzer.c help.c help.h
-	$(CC) $(CFLAGS) -o fuzzer fuzzer.c help.c
+fuzzer: fuzzer.c help.c $(STRATS) help.h fuzzer.h
+	$(CC) $(CFLAGS) -o fuzzer fuzzer.c help.c $(STRATS)
 
 # Clean up
 clean:
@@ -27,4 +31,13 @@ endif
 run: all
 	./fuzzer $(RUN_ARGS)
 
-.PHONY: all clean run
+
+# Run the fuzzer against all known bug binaries (bug0..bug5)
+# Usage: `make run_all` or `make run_all ITERATIONS=5000`
+run_all: all
+	@for b in $(BUGS); do \
+		printf "=== Running $$b ===\n"; \
+		./fuzzer $$b ; \
+	done
+
+.PHONY: all clean run run_all

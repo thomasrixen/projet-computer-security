@@ -33,7 +33,7 @@ struct tar_t
  * BONUS (for fun, no additional marks) without modifying this code,
  * compile it and use the executable to restart our computer.
  */
-int main(int argc, char* argv[])
+int launch_target(int argc, char* argv[])
 {
     if (argc < 2)
         return -1;
