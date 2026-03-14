@@ -4,28 +4,14 @@
 
 static int strat_nasty_typeflag(const char* target)
 {
-    static int crash_count = 0;
+    static int crash_count = 1;
 
-
-    // Liste de toutes les valeurs "values"
-    unsigned char values[] = {
-        '0','1','2','3','4','5','6','7',
-        'A','Z',
-        '\0',
-        '\n',
-        0xFF,
-        0x80,
-        'S','L','M'
-    };
-    int count = sizeof(values)/sizeof(values[0]);
-
-    // Modifier un seul élément
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < 0x100; i++) {
         
         struct tar_t header;
         init_base_header(&header);
 
-        header.typeflag = values[i];
+        header.typeflag = (char)i;
 
         calculate_checksum(&header);
 

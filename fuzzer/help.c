@@ -1,5 +1,11 @@
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <limits.h>
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 struct tar_t
 {                              /* byte offset */
@@ -33,15 +39,19 @@ struct tar_t
  * BONUS (for fun, no additional marks) without modifying this code,
  * compile it and use the executable to restart our computer.
  */
-int launch_target(int argc, char* argv[])
+int launch_target(const char* target)
 {
-    if (argc < 2)
-        return -1;
     int rv = 0;
-    char cmd[51];
-    strncpy(cmd, argv[1], 25);
-    cmd[26] = '\0';
-    strncat(cmd, " archive.tar", 25);
+    char base_dir[PATH_MAX];
+    char archive_abs[PATH_MAX];
+    char cmd[PATH_MAX * 3 + 128];
+
+    if (!getcwd(base_dir, sizeof(base_dir))) {
+        printf("Cannot get current directory\n");
+        return -1;
+    }
+    snprintf(archive_abs, sizeof(archive_abs), "%s/archive.tar", base_dir);
+    snprintf(cmd, sizeof(cmd), "\"%s\" \"%s\" 2>&1", target, archive_abs);
     char buf[33];
     FILE *fp;
 

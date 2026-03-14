@@ -11,6 +11,7 @@
 #include "strat/strat_linkname.c"
 #include "strat/strat_size.c"
 #include "strat/strat_typeflag.c"
+#include "strat/strat_checksum.c"
 #include "fuzzer.h"
 
 #ifndef PATH_MAX
@@ -188,8 +189,9 @@ int main(int argc, char* argv[])
     int crashes_linkname = strat_nasty_linkname(target_abs);
     int crashes_size = strat_nasty_size(target_abs);
     int crashes_typeflag = strat_nasty_typeflag(target_abs);
+    int crashes_checksum = strat_nasty_checksum(target_abs);
 
-    printf("\n\nDone. %d crashes found.\n", crashes_name+crashes_linkname+crashes_size+crashes_typeflag);
+    printf("\n\nDone. %d crashes found.\n", crashes_name+crashes_linkname+crashes_size+crashes_typeflag+crashes_checksum);
 
     free(target_abs);
     return 0;
