@@ -43,7 +43,7 @@ static int strat_nasty_linkname(const char* target)
         const char* test = values[i];
 
         memset(header.linkname, 0, sizeof(header.linkname));
-        memcpy(header.linkname, test, 100);
+        strcpy(header.linkname, test);
 
         calculate_checksum(&header);
 
@@ -53,7 +53,7 @@ static int strat_nasty_linkname(const char* target)
         if (run_target(target) == 1) {
             char crash_name[PATH_MAX];
             /* store crashes in crashes/ */
-            snprintf(crash_name, sizeof(crash_name), "crashes/crash_linkname_%d.tar", crash_count);
+            snprintf(crash_name, sizeof(crash_name), "crashes/crash_linkname_%d.tar", test);
             if (rename("archive.tar", crash_name) != 0) {
                 perror("rename crash file");
             } else {

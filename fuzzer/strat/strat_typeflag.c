@@ -4,7 +4,7 @@
 
 static int strat_nasty_typeflag(const char* target)
 {
-    static int crash_count = 1;
+    static int crash_count = 0;
 
     for (int i = 0; i < 0x100; i++) {
         
@@ -21,7 +21,7 @@ static int strat_nasty_typeflag(const char* target)
         if (run_target(target) == 1) {
             char crash_name[PATH_MAX];
             /* store crashes in crashes/ */
-            snprintf(crash_name, sizeof(crash_name), "crashes/crash_typeflag_%d.tar", crash_count);
+            snprintf(crash_name, sizeof(crash_name), "crashes/crash_typeflag_%d.tar", i);
             if (rename("archive.tar", crash_name) != 0) {
                 perror("rename crash file");
             } else {

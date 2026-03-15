@@ -2,23 +2,20 @@
 #include "../fuzzer.h"
 
 
-static int strat_nasty_size(const char* target)
+static int strat_nasty_id(const char* target)
 {
     static int crash_count = 0;
 
 
     // Liste de toutes les valeurs "values"
     const char* values[] = {
-        "77777777777", // Max octal
-        "99999999999", // Invalid octal
-        "00000000000", // Zero
-        "-0000000001", // Negative
-        "18446744073", // Overflow 64-bit
-        "21474836480",  // Large number
-        "511",
-        "1025",
-        "513",
-        "1023",
+        "7777777",
+        "9999999",
+        "-000001",
+        "2147483647",
+        "0000000",
+        "\0\0\0\0",
+        "abcdefg"
     };
     int count = sizeof(values)/sizeof(values[0]);
 
@@ -30,8 +27,10 @@ static int strat_nasty_size(const char* target)
 
         const char* test = values[i];
 
-        memset(header.size, 0, sizeof(header.size));
-        strcpy(header.size, test);
+        memset(header.uid, 0, sizeof(header.uid));
+        memset(header.gid, 0, sizeof(header.gid));
+        strcpy(header.uid, test);
+        strcpy(header.gid, test);
 
         calculate_checksum(&header);
 
@@ -41,7 +40,7 @@ static int strat_nasty_size(const char* target)
         if (run_target(target) == 1) {
             char crash_name[PATH_MAX];
             /* store crashes in crashes/ */
-            snprintf(crash_name, sizeof(crash_name), "crashes/crash_size_%d.tar", test);
+            snprintf(crash_name, sizeof(crash_name), "crashes/crash_id_%d.tar", test);
             if (rename("archive.tar", crash_name) != 0) {
                 perror("rename crash file");
             } else {

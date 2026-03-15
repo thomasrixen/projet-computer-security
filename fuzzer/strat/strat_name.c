@@ -43,7 +43,7 @@ static int strat_nasty_name(const char* target)
         const char* test = values[i];
 
         memset(header.name, 0, sizeof(header.name));
-        memcpy(header.name, test, 100);
+        strcpy(header.name, test);
 
         calculate_checksum(&header);
 
