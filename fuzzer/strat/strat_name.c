@@ -53,7 +53,7 @@ static int strat_nasty_name(const char* target)
         if (run_target(target) == 1) {
             char crash_name[PATH_MAX];
             /* store crashes in crashes/ */
-            snprintf(crash_name, sizeof(crash_name), "crashes/crash_name_%d.tar", crash_count);
+            snprintf(crash_name, sizeof(crash_name), "crashes/crash_name_%d.tar", test);
             if (rename("archive.tar", crash_name) != 0) {
                 perror("rename crash file");
             } else {

@@ -6,47 +6,30 @@ static int strat_nasty_mode(const char* target)
     static int crash_count = 0;
 
     const char *values[] = {
-
-        /* valeurs valides */
-        "0000000",
-        "0000644",
-        "0000755",
-
-        /* overflow digits */
         "7777777",
         "77777777",
         "777777777",
 
-        /* overflow entier */
         "17777777777",     // dépasse 32 bits
         "37777777777",
         "777777777777",
 
-        /* overflow massif */
         "77777777777777777777",
 
-        /* valeurs limites */
         "2147483647",
         "40000000000",
-
-        /* négatif */
         "-000644",
         "-7777777",
-
-        /* caractères invalides */
         "9999999",
         "8888888",
         "abcdefg",
 
-        /* mélange */
         "77abc77",
         "00000x0",
 
-        /* champs remplis */
         "FFFFFFFF",
         "////////",
 
-        /* null bytes */
         "\0\0\0\0\0\0\0\0"
     };
 
